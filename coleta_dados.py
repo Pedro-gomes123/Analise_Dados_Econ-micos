@@ -4,20 +4,12 @@ import datetime
 import requests as rq
 import json as j
 
-codigo_serie = ['selic','dolar','ipca' ]
 
-nome_serie = [432, 1, 433]
-
-indicadores = {
-    'selic': 432,
-    'dolar': 1,
-    'ipca': 433
-    }
 
 
 def Buscar_dados(codigo_serie, nome_serie):
     data_atual = datetime.datetime.now() # pega no sistema a data do dia 
-    data_duracao =datetime.timedelta(day=365) # pega no sistema o calendario do ano 
+    data_duracao =datetime.timedelta(days=6) # pega no sistema o calendario do ano 
     data_inicio = data_atual - data_duracao
 
 
@@ -40,7 +32,3 @@ def Buscar_dados(codigo_serie, nome_serie):
 
         print(f"response erro {response}")
     
-if __name__ == "__main__":
-    # O Chefe chama a função e passa os ingredientes
-    # Vamos buscar o Dólar por exemplo, que tem código 1 e nome 'Dólar'
-    Buscar_dados(1, 'Dólar')
