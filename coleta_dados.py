@@ -40,4 +40,7 @@ def Buscar_dados(codigo_serie, nome_serie):
 
         print(f"response erro {response}")
     
-Buscar_dados()
+if __name__ == "__main__":
+    # O Chefe chama a função e passa os ingredientes
+    # Vamos buscar o Dólar por exemplo, que tem código 1 e nome 'Dólar'
+    Buscar_dados(1, 'Dólar')
