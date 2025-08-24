@@ -30,9 +30,40 @@ def menu():
         try:
             resposta_int = int(resposta_limpa)
             print(f"Você escolheu o número: {resposta_int}")
+
+            match resposta_limpa:
+                case 1:
+                    print('Buscando os dados da Selic')
+                    nome = 'selic'
+                    codigo = indicadores[nome] 
+                    cd.buscar_dados(codigo, nome)
+
+                case 2:
+                    print('Buscando os dados do Dólar')
+                    nome = 'Dólar'
+                    codigo = indicadores[nome]
+                    cd.Buscar_dados(codigo, nome)
+
+                case 3:
+                    print('Buscando os dados do IPCA')
+                    nome = "ipca"
+                    codigo - indicadores[nome]
+                    cd.Buscar_dados(codigo, nome)
+                case 4:
+                    print('Encerrando o programa .......')
+                    
+                case _:
+                    print('Escolha invalida')
            
         except ValueError:
             print("Erro: Por favor, digite apenas um número.")
+
+    
+
+
+
+
+
 
 
 menu()

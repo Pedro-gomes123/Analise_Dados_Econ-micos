@@ -7,7 +7,7 @@ import json as j
 
 
 
-def Buscar_dados(codigo_serie, nome_serie):
+def Buscar_dados(codigo_serie, nome_serie , num_dias):
     data_atual = datetime.datetime.now() # pega no sistema a data do dia 
     data_duracao =datetime.timedelta(days=6) # pega no sistema o calendario do ano 
     data_inicio = data_atual - data_duracao
