@@ -61,5 +61,5 @@ Antes de começar, você vai precisar ter instalado em sua máquina:
 
 **Pedro Gomes**
 
-* LinkedIn: ``
+* LinkedIn: `https://www.linkedin.com/in/pedro-gomes-a58233339/`
 * GitHub: `@Pedro-gomes123`
