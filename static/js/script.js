@@ -1,105 +1,137 @@
 // Arquivo: static/js/script.js
 
-// Espera o HTML carregar completamente antes de rodar o JavaScript
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- 1. SELEÇÃO DOS ELEMENTOS ---
-    // Pega todos os elementos que têm a classe 'card'
+    // --- 1. SELEÇÃO DOS NOVOS ELEMENTOS ---
     const cards = document.querySelectorAll('.card');
-    // Pega o elemento <canvas> onde o gráfico será desenhado
+    const numDiasInput = document.getElementById('numDiasInput');
+    const presetButtons = document.querySelectorAll('.preset-buttons button');
+    const chartMessage = document.getElementById('chart-message');
     const ctx = document.getElementById('meuGrafico').getContext('2d');
     
-    // Variável para guardar nosso gráfico, para que possamos destruí-lo antes de desenhar um novo
     let graficoAtivo = null;
+    let ativoSelecionado = null; // Guarda qual ativo está selecionado no momento
 
-    // --- 2. FUNÇÃO PARA DESENHAR O GRÁFICO ---
-    // Esta função recebe os dados e o nome do ativo e usa a biblioteca Chart.js para desenhar
+    // --- 2. FUNÇÃO PARA DESENHAR O GRÁFICO (continua a mesma) ---
     function desenharGrafico(dados, nomeAtivo) {
-        // Se já existe um gráfico na tela, destrua-o primeiro
         if (graficoAtivo) {
             graficoAtivo.destroy();
         }
 
-        // Pega os dados para o eixo X (datas) e eixo Y (valores)
-        const labels = dados.map(item => new Date(item.data).toLocaleDateString('pt-BR'));
+        // Mostra o canvas e esconde a mensagem
+        ctx.canvas.style.display = 'block';
+        chartMessage.classList.add('hidden');
+
+        const labels = dados.map(item => new Date(item.data).toLocaleDateString('pt-BR', { timeZone: 'UTC' }));
         const valores = dados.map(item => item[nomeAtivo]);
 
-        // Cria o novo gráfico
         graficoAtivo = new Chart(ctx, {
-            type: 'line', // Tipo de gráfico (linha)
+            type: 'line',
             data: {
                 labels: labels,
                 datasets: [{
                     label: `Valor do ${nomeAtivo.toUpperCase()}`,
                     data: valores,
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: '#4db6ac',
+                    backgroundColor: 'rgba(77, 182, 172, 0.2)',
                     fill: true,
                     tension: 0.1
                 }]
             },
             options: {
                 responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: false
+                maintainAspectRatio: false,
+                scales: { 
+                    y: { 
+                        beginAtZero: false,
+                        ticks: { color: '#e0e0e0' },
+                        grid: { color: '#333' }
+                    },
+                    x: {
+                        ticks: { color: '#e0e0e0' },
+                        grid: { color: '#333' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#e0e0e0'
+                        }
                     }
                 }
             }
         });
     }
 
-    // --- 3. FUNÇÃO PARA BUSCAR OS DADOS E CHAMAR O DESENHO ---
-    // Esta função é "async" porque ela precisa esperar a resposta da nossa API Python
-    async function buscarEDesenhar(nomeAtivo, numDias) {
-        console.log(`Buscando dados para ${nomeAtivo} nos últimos ${numDias} dias...`);
-        
-        try {
-            // "Liga" para a nossa API em Python
-            const response = await fetch(`/api/dados/${nomeAtivo}/${numDias}`);
-            if (!response.ok) {
-                throw new Error('A resposta da API não foi OK');
-            }
-            const dados = await response.json(); // Pega os dados em formato JSON
+    // --- 3. FUNÇÃO PARA BUSCAR OS DADOS (continua quase a mesma) ---
+    async function buscarEDesenhar() {
+        // Só continua se um ativo foi selecionado E o input tem um valor válido
+        if (!ativoSelecionado || !numDiasInput.value) {
+            return;
+        }
 
-            console.log("Dados recebidos:", dados);
+        const numDias = parseInt(numDiasInput.value, 10);
+        if (isNaN(numDias) || numDias <= 0) {
+            alert("Por favor, insira um número de dias válido.");
+            return;
+        }
+        
+        console.log(`Buscando dados para ${ativoSelecionado} nos últimos ${numDias} dias...`);
+        chartMessage.textContent = `Buscando dados para ${ativoSelecionado.toUpperCase()}...`;
+        chartMessage.classList.remove('hidden');
+        ctx.canvas.style.display = 'none';
+
+        try {
+            const response = await fetch(`/api/dados/${ativoSelecionado}/${numDias}`);
+            if (!response.ok) { throw new Error('A resposta da API não foi OK'); }
+            const dados = await response.json();
 
             if (dados && dados.length > 0) {
-                // Se recebemos dados, chama a função para desenhar o gráfico
-                desenharGrafico(dados, nomeAtivo);
+                desenharGrafico(dados, ativoSelecionado);
             } else {
-                console.log("Nenhum dado retornado pela API.");
-                // Opcional: Limpar o gráfico se não houver dados
-                if (graficoAtivo) {
-                    graficoAtivo.destroy();
-                }
+                chartMessage.textContent = `Nenhum dado encontrado para ${ativoSelecionado.toUpperCase()} no período selecionado.`;
+                if (graficoAtivo) { graficoAtivo.destroy(); }
             }
         } catch (error) {
             console.error("Erro ao buscar dados:", error);
+            chartMessage.textContent = "Ocorreu um erro ao buscar os dados. Tente novamente.";
         }
     }
 
-    // --- 4. ADICIONANDO O "OUVINTE DE CLIQUE" NOS CARDS ---
-    // Passa por cada card que encontramos no HTML
+    // --- 4. NOVA LÓGICA DE INTERATIVIDADE ---
+
+    // O que acontece quando um CARD é clicado
     cards.forEach(card => {
-        // Adiciona um evento que dispara quando o card é clicado
         card.addEventListener('click', () => {
-            const nomeAtivo = card.dataset.ativo; // Pega o nome do ativo (ex: 'selic') do atributo 'data-ativo'
-            
-            // Pergunta ao usuário o número de dias
-            const diasStr = prompt("Por quantos dias para trás você deseja visualizar?", "30");
-            
-            // Se o usuário não cancelar e digitar algo, continua
-            if (diasStr) {
-                const numDias = parseInt(diasStr, 10);
-                // Verifica se o que ele digitou é um número válido
-                if (!isNaN(numDias) && numDias > 0) {
-                    buscarEDesenhar(nomeAtivo, numDias);
-                } else {
-                    alert("Por favor, digite um número válido de dias.");
-                }
-            }
+            // Remove a seleção de todos os outros cards
+            cards.forEach(c => c.classList.remove('selected'));
+            // Adiciona a seleção apenas no card clicado
+            card.classList.add('selected');
+            // Guarda o nome do ativo que foi selecionado
+            ativoSelecionado = card.dataset.ativo;
+            // Dispara a busca de dados imediatamente
+            buscarEDesenhar();
         });
+    });
+
+    // O que acontece quando um BOTÃO DE PERÍODO é clicado
+    presetButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // Pega o número de dias do botão (ex: 30)
+            const dias = button.dataset.days;
+            // Coloca esse número no campo de input
+            numDiasInput.value = dias;
+            // Dispara a busca de dados
+            buscarEDesenhar();
+        });
+    });
+
+    // O que acontece quando o usuário APERTA ENTER no campo de input
+    numDiasInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            // Dispara a busca de dados
+            buscarEDesenhar();
+        }
     });
 
 });
