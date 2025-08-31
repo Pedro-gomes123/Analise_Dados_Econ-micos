@@ -1,6 +1,6 @@
 import duckdb as db
 from flask import Flask, render_template
-from coleta_dados import buscar_dados as bd
+from coleta_dados import Buscar_dados as bd
 
 app = Flask(__name__)
 
